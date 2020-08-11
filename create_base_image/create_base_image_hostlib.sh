@@ -2,7 +2,7 @@
 
 # Common code to build a host image on GCE
 
-source "shflags/shflags"
+source "../external/shflags/shflags"
 
 # Build instance info
 DEFINE_string build_instance \
