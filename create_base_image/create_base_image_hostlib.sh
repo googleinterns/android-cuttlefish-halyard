@@ -72,12 +72,12 @@ fetch_cf_package() {
   dpkg-source -b "${debian_dir}"
   rm -rf "${debian_dir}"
 
-  # Gets cf-common version
-  for dsc in *dsc; do
-    CF_VER=$(basename "${dsc/*_/}" .dsc)
-    CF_VER="${CF_VER//\./-}"
-  done
+}
 
+get_cf_version() {
+  CF_VER=(*.dsc)
+  CF_VER=$(basename "${CF_VER/*_/}" .dsc)
+  CF_VER="${CF_VER//\./-}"
 }
 
 # Gets build artifacts from Android Build API
@@ -119,6 +119,7 @@ main() {
   scratch_dir="$(mktemp -d)"
   pushd "${scratch_dir}"
     fetch_cf_package "${FLAGS_repository_url}" "${FLAGS_repository_branch}"
+    get_cf_version
     mkdir cuttlefish
     pushd cuttlefish
       fetch_build_artifacts "${FLAGS_build_target}" "${FLAGS_build_id}"
