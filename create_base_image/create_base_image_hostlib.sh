@@ -28,6 +28,8 @@ DEFINE_string dest_family "" \
   "Image family to add the image to" "f"
 DEFINE_string dest_project "$(gcloud config get-value project)" \
   "Project to use for the new image" "p"
+DEFINE_boolean respin false \
+  "Whether to replace an image if its name is taken"
 
 # Base image info
 DEFINE_string source_image_family "debian-10" \
@@ -142,15 +144,22 @@ main() {
     dest_family_flag=()
   fi
 
-  # Deletes instances, disks and images with names that will be used for build
+  # Deletes instances and disks with names that will be used for build
   delete_instances=("${FLAGS_build_instance}" "${FLAGS_dest_image}")
   gcloud compute instances delete -q \
     "${PZ[@]}" "${delete_instances[@]}" || echo Not running
   gcloud compute disks delete -q \
     "${PZ[@]}" "${FLAGS_dest_image}" || echo No scratch disk
-  gcloud compute images delete -q \
-    --project="${FLAGS_build_project}" "${FLAGS_dest_image}"  || echo Not respinning
 
+  # Checks for existing image with same name
+  gcloud compute images describe \
+    --project="${FLAGS_build_project}" "${FLAGS_dest_image}" && \
+    if [ ${FLAGS_respin} -eq ${FLAGS_TRUE} ]; then
+  gcloud compute images delete -q \
+        --project="${FLAGS_build_project}" "${FLAGS_dest_image}"
+    else
+      fatal_echo "Image ${FLAGS_dest_image} already exists. (To replace run with flag --respin)"
+    fi
 
   # BUILD INSTANCE AND DISK CREATION
 
