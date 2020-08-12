@@ -7,8 +7,7 @@ sudo apt-get update
 
 # Stuff we need to get build support
 
-sudo apt install -y debhelper ubuntu-dev-tools equivs cloud-utils \
-  "${extra_packages[@]}"
+sudo apt install -y debhelper ubuntu-dev-tools equivs cloud-utils
 
 # Install the cuttlefish build deps
 

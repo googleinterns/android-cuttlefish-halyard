@@ -86,7 +86,7 @@ fetch_build_artifacts() {
   local target="$1"
   local build_id="$2"
   
-  FETCH_ARTIFACTS=`mktemp`
+  FETCH_ARTIFACTS="$(mktemp)"
   curl "https://www.googleapis.com/android/internal/build/v3/builds/$build_id/$target/attempts/latest/artifacts/fetch_cvd?alt=media" -o $FETCH_ARTIFACTS
 
   chmod +x $FETCH_ARTIFACTS
@@ -127,7 +127,7 @@ main() {
   popd
   source_files=(
     "create_base_image_gce.sh"
-    ${scratch_dir}/*
+    "${scratch_dir}"/*
   )
 
   # Sets image and family names in case none were specified
@@ -156,13 +156,13 @@ main() {
   gcloud compute images describe \
     --project="${FLAGS_build_project}" "${FLAGS_dest_image}" && \
     if [ ${FLAGS_respin} -eq ${FLAGS_TRUE} ]; then
-  gcloud compute images delete -q \
+      gcloud compute images delete -q \
         --project="${FLAGS_build_project}" "${FLAGS_dest_image}"
     else
       fatal_echo "Image ${FLAGS_dest_image} already exists. (To replace run with flag --respin)"
     fi
 
-  # BUILD INSTANCE AND DISK CREATION
+  # BUILD INSTANCE CREATION
 
   gcloud compute disks create \
     "${PZ[@]}" \
@@ -208,7 +208,7 @@ main() {
     "${PZ[@]}" "${FLAGS_build_instance}"
 
   gcloud compute images create \
-    --project="${FLAGS_build_project}" \
+    --project="${FLAGS_dest_project}" \
     --source-disk="${FLAGS_dest_image}" \
     --source-disk-zone="${FLAGS_build_zone}" \
     --licenses=https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx \
@@ -217,16 +217,5 @@ main() {
 
   gcloud compute disks delete -q "${PZ[@]}" \
     "${FLAGS_dest_image}"
-  
-  cat <<EOF
-    echo Test and if this looks good, consider releasing it via:
-
-    gcloud compute images create \
-      --project="${FLAGS_dest_project}" \
-      --source-image="${FLAGS_dest_image}" \
-      --source-image-project="${FLAGS_build_project}" \
-      "${dest_family_flag[@]}" \
-      "${FLAGS_dest_image}"
-EOF
 
 }
