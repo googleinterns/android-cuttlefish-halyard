@@ -208,7 +208,7 @@ main() {
     "${PZ[@]}" "${FLAGS_build_instance}"
 
   gcloud compute images create \
-    --project="${FLAGS_dest_project}" \
+    --project="${FLAGS_build_project}" \
     --source-disk="${FLAGS_dest_image}" \
     --source-disk-zone="${FLAGS_build_zone}" \
     --licenses=https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx \
@@ -216,6 +216,13 @@ main() {
     "${FLAGS_dest_image}"
 
   gcloud compute disks delete -q "${PZ[@]}" \
+    "${FLAGS_dest_image}"
+
+  gcloud compute images create \
+    --project="${FLAGS_dest_project}" \
+    --source-image="${FLAGS_dest_image}" \
+    --source-image-project="${FLAGS_build_project}" \
+    "${dest_family_flag[@]}" \
     "${FLAGS_dest_image}"
 
 }
