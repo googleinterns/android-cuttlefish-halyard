@@ -26,7 +26,7 @@ DEFINE_string dest_image "" \
   "Image to create" "o"
 DEFINE_string dest_family "" \
   "Image family to add the image to" "f"
-DEFINE_string dest_project "$(gcloud config get-value project)" \
+DEFINE_string dest_project "" \
   "Project to use for the new image" "p"
 DEFINE_boolean respin false \
   "Whether to replace an image if its name is taken"
@@ -218,11 +218,13 @@ main() {
   gcloud compute disks delete -q "${PZ[@]}" \
     "${FLAGS_dest_image}"
 
-  gcloud compute images create \
-    --project="${FLAGS_dest_project}" \
-    --source-image="${FLAGS_dest_image}" \
-    --source-image-project="${FLAGS_build_project}" \
-    "${dest_family_flag[@]}" \
-    "${FLAGS_dest_image}"
+  if [[ -n "${FLAGS_dest_project}" && "${FLAGS_dest_project}" != "${FLAGS_build_project}" ]]; then
+    gcloud compute images create \
+      --project="${FLAGS_dest_project}" \
+      --source-image="${FLAGS_dest_image}" \
+      --source-image-project="${FLAGS_build_project}" \
+      "${dest_family_flag[@]}" \
+      "${FLAGS_dest_image}"
+  fi
 
 }
