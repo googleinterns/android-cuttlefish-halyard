@@ -29,6 +29,9 @@ get_cf_version() {
 fetch_cf_package "$1" "$2"
 get_cf_version
 
+name_values=("cf_version=${cf_version}")
+printf "%s\n" "${name_values[@]}" > image_name_values
+
 # Install the cuttlefish build deps
 for dsc in *.dsc; do
   yes | sudo mk-build-deps -i "${dsc}" -t apt-get

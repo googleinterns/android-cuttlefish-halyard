@@ -75,6 +75,31 @@ fetch_build_artifacts() {
 
 }
 
+# Sets image and family names in case none were specified
+update_dest_names() {
+
+  # Reads cf_version
+  name_values="$(mktemp)"
+  gcloud compute scp "${PZ[@]}" -- \
+    "${FLAGS_build_instance}:~/image_name_values" "${name_values}"
+  while read -r line; do declare "$line"; done < "${name_values}"
+
+  FLAGS_build_target="${FLAGS_build_target//_/-}"
+
+  if [[ -z "${FLAGS_dest_image}" ]]; then
+    FLAGS_dest_image="halyard-${cf_version}-${FLAGS_build_branch}-${FLAGS_build_target}-${FLAGS_build_id}"
+  fi
+  if [[ -z "${FLAGS_dest_family}" ]]; then
+    FLAGS_dest_family="halyard-${FLAGS_build_branch}-${FLAGS_build_target}"
+  fi
+
+  if [[ -n "${FLAGS_dest_family}" ]]; then
+    dest_family_flag=("--family=${FLAGS_dest_family}")
+  else
+    dest_family_flag=()
+  fi
+}
+
 
 main() {
   set -o errexit
@@ -109,37 +134,12 @@ main() {
     "${scratch_dir}"/*
   )
 
-  # Sets image and family names in case none were specified
-  FLAGS_build_target="${FLAGS_build_target//_/-}"
-  if [[ -z "${FLAGS_dest_image}" ]]; then
-    FLAGS_dest_image="halyard-${CF_VER}-${FLAGS_build_branch}-${FLAGS_build_target}-${FLAGS_build_id}"
-  fi
-  if [[ -z "${FLAGS_dest_family}" ]]; then
-    FLAGS_dest_family="halyard-${FLAGS_build_branch}-${FLAGS_build_target}"
-  fi
-
-  if [[ -n "${FLAGS_dest_family}" ]]; then
-    dest_family_flag=("--family=${FLAGS_dest_family}")
-  else
-    dest_family_flag=()
-  fi
-
   # Deletes instances and disks with names that will be used for build
-  delete_instances=("${FLAGS_build_instance}" "${FLAGS_dest_image}")
   gcloud compute instances delete -q \
     "${PZ[@]}" "${FLAGS_build_instance}" || echo Not running
   gcloud compute disks delete -q \
     "${PZ[@]}" "${IMAGE_DISK}" || echo No scratch disk
 
-  # Checks for existing image with same name
-  gcloud compute images describe \
-    --project="${FLAGS_build_project}" "${FLAGS_dest_image}" && \
-    if [ ${FLAGS_respin} -eq ${FLAGS_TRUE} ]; then
-      gcloud compute images delete -q \
-        --project="${FLAGS_build_project}" "${FLAGS_dest_image}"
-    else
-      fatal_echo "Image ${FLAGS_dest_image} already exists. (To replace run with flag --respin)"
-    fi
 
   # BUILD INSTANCE CREATION
 
@@ -179,8 +179,20 @@ main() {
 
   # IMAGE CREATION
 
+  # Checks for existing image with same name
+  gcloud compute images describe \
+    --project="${FLAGS_build_project}" "${FLAGS_dest_image}" && \
+    if [ ${FLAGS_respin} -eq ${FLAGS_TRUE} ]; then
+      gcloud compute images delete -q \
+        --project="${FLAGS_build_project}" "${FLAGS_dest_image}"
+    else
+      fatal_echo "Image ${FLAGS_dest_image} already exists. (To replace run with flag --respin)"
+    fi
+
   gcloud compute ssh "${PZ[@]}" "${FLAGS_build_instance}" -- \
     ./create_base_image_gce.sh "${FLAGS_repository_url}" "${FLAGS_repository_branch}"
+
+  update_dest_names
 
   gcloud compute instances delete -q \
     "${PZ[@]}" "${FLAGS_build_instance}"
