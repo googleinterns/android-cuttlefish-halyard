@@ -61,26 +61,6 @@ wait_for_instance() {
   done
 }
 
-# Gets debian packages from Cuttlefish repo
-fetch_cf_package() {
-
-  local url="$1"
-  local branch="$2"
-  local repository_dir="${url/*\//}"
-  local debian_dir="$(basename "${repository_dir}" .git)"
-
-  git clone "${url}" -b "${branch}"
-  dpkg-source -b "${debian_dir}"
-  rm -rf "${debian_dir}"
-
-}
-
-get_cf_version() {
-  CF_VER=(*.dsc)
-  CF_VER=$(basename "${CF_VER/*_/}" .dsc)
-  CF_VER="${CF_VER//\./-}"
-}
-
 # Gets build artifacts from Android Build API
 fetch_build_artifacts() {
 
@@ -116,11 +96,9 @@ main() {
     python2 -c "import sys, json; print json.load(sys.stdin)['builds'][0]['buildId']"`
   fi
 
-  # Fetches cuttlefish common packages and target build artifacts
+  # Fetches target build artifacts
   scratch_dir="$(mktemp -d)"
   pushd "${scratch_dir}"
-    fetch_cf_package "${FLAGS_repository_url}" "${FLAGS_repository_branch}"
-    get_cf_version
     mkdir cuttlefish
     pushd cuttlefish
       fetch_build_artifacts "${FLAGS_build_target}" "${FLAGS_build_id}"
@@ -202,7 +180,7 @@ main() {
   # IMAGE CREATION
 
   gcloud compute ssh "${PZ[@]}" "${FLAGS_build_instance}" -- \
-    ./create_base_image_gce.sh
+    ./create_base_image_gce.sh "${FLAGS_repository_url}" "${FLAGS_repository_branch}"
 
   gcloud compute instances delete -q \
     "${PZ[@]}" "${FLAGS_build_instance}"

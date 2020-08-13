@@ -6,11 +6,30 @@ set -o errexit
 sudo apt-get update
 
 # Stuff we need to get build support
+sudo apt install -y debhelper ubuntu-dev-tools equivs cloud-utils git
 
-sudo apt install -y debhelper ubuntu-dev-tools equivs cloud-utils
+# Gets debian packages from Cuttlefish repo
+fetch_cf_package() {
+  local url="$1"
+  local branch="$2"
+  local repository_dir="${url/*\//}"
+  local debian_dir="$(basename "${repository_dir}" .git)"
+
+  git clone "${url}" -b "${branch}"
+  dpkg-source -b "${debian_dir}"
+  rm -rf "${debian_dir}"
+}
+
+get_cf_version() {
+  cf_version=(*.dsc)
+  cf_version=$(basename "${cf_version/*_/}" .dsc)
+  cf_version="${cf_version//\./-}"
+}
+
+fetch_cf_package "$1" "$2"
+get_cf_version
 
 # Install the cuttlefish build deps
-
 for dsc in *.dsc; do
   yes | sudo mk-build-deps -i "${dsc}" -t apt-get
 done
