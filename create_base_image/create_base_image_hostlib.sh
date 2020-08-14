@@ -61,20 +61,6 @@ wait_for_instance() {
   done
 }
 
-# Gets build artifacts from Android Build API
-fetch_build_artifacts() {
-
-  local target="$1"
-  local build_id="$2"
-  
-  FETCH_ARTIFACTS="$(mktemp)"
-  curl "https://www.googleapis.com/android/internal/build/v3/builds/$build_id/$target/attempts/latest/artifacts/fetch_cvd?alt=media" -o $FETCH_ARTIFACTS
-
-  chmod +x $FETCH_ARTIFACTS
-  eval $FETCH_ARTIFACTS
-
-}
-
 # Sets image and family names in case none were specified
 update_dest_names() {
 
@@ -115,24 +101,7 @@ main() {
     build_tags=()
   fi
 
-  # Gets latest successful build_id from target branch in case no build_id is specified
-  if [[ -z "${FLAGS_build_id}" ]]; then
-    FLAGS_build_id=`curl "https://www.googleapis.com/android/internal/build/v3/builds?branch=$FLAGS_build_branch&buildAttemptStatus=complete&buildType=submitted&maxResults=1&successful=true&target=$FLAGS_build_target" 2>/dev/null | \
-    python2 -c "import sys, json; print json.load(sys.stdin)['builds'][0]['buildId']"`
-  fi
-
-  # Fetches target build artifacts
-  scratch_dir="$(mktemp -d)"
-  pushd "${scratch_dir}"
-    mkdir cuttlefish
-    pushd cuttlefish
-      fetch_build_artifacts "${FLAGS_build_target}" "${FLAGS_build_id}"
-    popd
-  popd
-  source_files=(
-    "create_base_image_gce.sh"
-    "${scratch_dir}"/*
-  )
+  source_files=("create_base_image_gce.sh")
 
   # Deletes instances and disks with names that will be used for build
   gcloud compute instances delete -q \
@@ -190,7 +159,9 @@ main() {
     fi
 
   gcloud compute ssh "${PZ[@]}" "${FLAGS_build_instance}" -- \
-    ./create_base_image_gce.sh "${FLAGS_repository_url}" "${FLAGS_repository_branch}"
+    ./create_base_image_gce.sh \
+      "${FLAGS_repository_url}" "${FLAGS_repository_branch}" \
+      "${FLAGS_build_branch}" "${FLAGS_build_target}" "${FLAGS_build_id}"
 
   update_dest_names
 

@@ -6,7 +6,13 @@ set -o errexit
 sudo apt-get update
 
 # Stuff we need to get build support
-sudo apt install -y debhelper ubuntu-dev-tools equivs cloud-utils git
+sudo apt install -y debhelper ubuntu-dev-tools equivs cloud-utils git bsdtar
+
+repository_url=$1
+repository_branch=$2
+build_branch=$3
+build_target=$4
+build_id=$5
 
 # Gets debian packages from Cuttlefish repo
 fetch_cf_package() {
@@ -26,10 +32,28 @@ get_cf_version() {
   cf_version="${cf_version//\./-}"
 }
 
-fetch_cf_package "$1" "$2"
+# Gets build artifacts from Android Build API
+fetch_build_artifacts() {
+  local target="$1"
+  local build_id="$2"
+  
+  FETCH_ARTIFACTS="$(mktemp)"
+  curl "https://www.googleapis.com/android/internal/build/v3/builds/$build_id/$target/attempts/latest/artifacts/fetch_cvd?alt=media" -o $FETCH_ARTIFACTS
+  chmod +x $FETCH_ARTIFACTS
+  eval $FETCH_ARTIFACTS
+}
+
+fetch_cf_package "${repository_url}" "${repository_branch}" 
 get_cf_version
 
-name_values=("cf_version=${cf_version}")
+# Gets latest successful build_id from target branch in case no build_id is specified
+if [[ -z "${build_id}" ]]; then
+  build_id=`curl "https://www.googleapis.com/android/internal/build/v3/builds?branch=$build_branch&buildAttemptStatus=complete&buildType=submitted&maxResults=1&successful=true&target=$build_target" 2>/dev/null | \
+  python2 -c "import sys, json; print json.load(sys.stdin)['builds'][0]['buildId']"`
+fi
+
+# Writes dest image and family values into file
+name_values=("cf_version=${cf_version}" "FLAGS_build_id=${build_id}")
 printf "%s\n" "${name_values[@]}" > image_name_values
 
 # Install the cuttlefish build deps
@@ -69,8 +93,14 @@ sudo resize2fs /dev/sdb1
 sudo mkdir /mnt/image
 sudo mount /dev/sdb1 /mnt/image
 cp "${debs[@]}" /mnt/image/tmp
-sudo cp -r cuttlefish /mnt/image/usr/local/share
-sudo chmod -R 755 /mnt/image/usr/local/share/cuttlefish 
+
+# Fetches build artifacts 
+sudo mkdir /mnt/image/usr/local/share/cuttlefish
+sudo chmod -R 777 /mnt/image/usr/local/share/cuttlefish
+pushd /mnt/image/usr/local/share/cuttlefish
+fetch_build_artifacts "${build_target}" "${build_id}"
+popd
+
 sudo mount -t sysfs none /mnt/image/sys
 sudo mount -t proc none /mnt/image/proc
 sudo mount --bind /dev/ /mnt/image/dev
