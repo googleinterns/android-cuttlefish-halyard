@@ -12,6 +12,7 @@ DEFINE_string build_project "$(gcloud config get-value project)" \
 DEFINE_string build_zone "$(gcloud config get-value compute/zone)" \
   "Zone to use for scratch resources"
 DEFINE_string build_tags "" "Tags to add to the GCE instance"
+IMAGE_DISK="${USER}-image-disk"
 
 # Build artifacts info
 DEFINE_string build_branch "aosp-master" \
@@ -60,38 +61,29 @@ wait_for_instance() {
   done
 }
 
-# Gets debian packages from Cuttlefish repo
-fetch_cf_package() {
+# Sets image and family names in case none were specified
+update_dest_names() {
 
-  local url="$1"
-  local branch="$2"
-  local repository_dir="${url/*\//}"
-  local debian_dir="$(basename "${repository_dir}" .git)"
+  # Reads cf_version
+  name_values="$(mktemp)"
+  gcloud compute scp "${PZ[@]}" -- \
+    "${FLAGS_build_instance}:~/image_name_values" "${name_values}"
+  while read -r line; do declare "$line"; done < "${name_values}"
 
-  git clone "${url}" -b "${branch}"
-  dpkg-source -b "${debian_dir}"
-  rm -rf "${debian_dir}"
+  FLAGS_build_target="${FLAGS_build_target//_/-}"
 
-}
+  if [[ -z "${FLAGS_dest_image}" ]]; then
+    FLAGS_dest_image="halyard-${cf_version}-${FLAGS_build_branch}-${FLAGS_build_target}-${FLAGS_build_id}"
+  fi
+  if [[ -z "${FLAGS_dest_family}" ]]; then
+    FLAGS_dest_family="halyard-${FLAGS_build_branch}-${FLAGS_build_target}"
+  fi
 
-get_cf_version() {
-  CF_VER=(*.dsc)
-  CF_VER=$(basename "${CF_VER/*_/}" .dsc)
-  CF_VER="${CF_VER//\./-}"
-}
-
-# Gets build artifacts from Android Build API
-fetch_build_artifacts() {
-
-  local target="$1"
-  local build_id="$2"
-  
-  FETCH_ARTIFACTS="$(mktemp)"
-  curl "https://www.googleapis.com/android/internal/build/v3/builds/$build_id/$target/attempts/latest/artifacts/fetch_cvd?alt=media" -o $FETCH_ARTIFACTS
-
-  chmod +x $FETCH_ARTIFACTS
-  eval $FETCH_ARTIFACTS
-
+  if [[ -n "${FLAGS_dest_family}" ]]; then
+    dest_family_flag=("--family=${FLAGS_dest_family}")
+  else
+    dest_family_flag=()
+  fi
 }
 
 
@@ -109,58 +101,14 @@ main() {
     build_tags=()
   fi
 
-  # Gets latest successful build_id from target branch in case no build_id is specified
-  if [[ -z "${FLAGS_build_id}" ]]; then
-    FLAGS_build_id=`curl "https://www.googleapis.com/android/internal/build/v3/builds?branch=$FLAGS_build_branch&buildAttemptStatus=complete&buildType=submitted&maxResults=1&successful=true&target=$FLAGS_build_target" 2>/dev/null | \
-    python2 -c "import sys, json; print json.load(sys.stdin)['builds'][0]['buildId']"`
-  fi
-
-  # Fetches cuttlefish common packages and target build artifacts
-  scratch_dir="$(mktemp -d)"
-  pushd "${scratch_dir}"
-    fetch_cf_package "${FLAGS_repository_url}" "${FLAGS_repository_branch}"
-    get_cf_version
-    mkdir cuttlefish
-    pushd cuttlefish
-      fetch_build_artifacts "${FLAGS_build_target}" "${FLAGS_build_id}"
-    popd
-  popd
-  source_files=(
-    "create_base_image_gce.sh"
-    "${scratch_dir}"/*
-  )
-
-  # Sets image and family names in case none were specified
-  FLAGS_build_target="${FLAGS_build_target//_/-}"
-  if [[ -z "${FLAGS_dest_image}" ]]; then
-    FLAGS_dest_image="halyard-${CF_VER}-${FLAGS_build_branch}-${FLAGS_build_target}-${FLAGS_build_id}"
-  fi
-  if [[ -z "${FLAGS_dest_family}" ]]; then
-    FLAGS_dest_family="halyard-${FLAGS_build_branch}-${FLAGS_build_target}"
-  fi
-
-  if [[ -n "${FLAGS_dest_family}" ]]; then
-    dest_family_flag=("--family=${FLAGS_dest_family}")
-  else
-    dest_family_flag=()
-  fi
+  source_files=("create_base_image_gce.sh")
 
   # Deletes instances and disks with names that will be used for build
-  delete_instances=("${FLAGS_build_instance}" "${FLAGS_dest_image}")
   gcloud compute instances delete -q \
-    "${PZ[@]}" "${delete_instances[@]}" || echo Not running
+    "${PZ[@]}" "${FLAGS_build_instance}" || echo Not running
   gcloud compute disks delete -q \
-    "${PZ[@]}" "${FLAGS_dest_image}" || echo No scratch disk
+    "${PZ[@]}" "${IMAGE_DISK}" || echo No scratch disk
 
-  # Checks for existing image with same name
-  gcloud compute images describe \
-    --project="${FLAGS_build_project}" "${FLAGS_dest_image}" && \
-    if [ ${FLAGS_respin} -eq ${FLAGS_TRUE} ]; then
-      gcloud compute images delete -q \
-        --project="${FLAGS_build_project}" "${FLAGS_dest_image}"
-    else
-      fatal_echo "Image ${FLAGS_dest_image} already exists. (To replace run with flag --respin)"
-    fi
 
   # BUILD INSTANCE CREATION
 
@@ -169,8 +117,7 @@ main() {
     --image-family="${FLAGS_source_image_family}" \
     --image-project="${FLAGS_source_image_project}" \
     --size=30GB \
-    "${FLAGS_dest_image}"
-
+    "${IMAGE_DISK}"
 
   # Checks if gpu available 
   local gpu_type="nvidia-tesla-p100-vws"
@@ -192,7 +139,7 @@ main() {
   wait_for_instance "${PZ[@]}" "${FLAGS_build_instance}"
 
   gcloud compute instances attach-disk \
-      "${PZ[@]}" "${FLAGS_build_instance}" --disk="${FLAGS_dest_image}"
+      "${PZ[@]}" "${FLAGS_build_instance}" --disk="${IMAGE_DISK}"
 
   gcloud compute scp "${PZ[@]}" -- -r \
     "${source_files[@]}" \
@@ -201,22 +148,36 @@ main() {
 
   # IMAGE CREATION
 
+  # Checks for existing image with same name
+  gcloud compute images describe \
+    --project="${FLAGS_build_project}" "${FLAGS_dest_image}" && \
+    if [ ${FLAGS_respin} -eq ${FLAGS_TRUE} ]; then
+      gcloud compute images delete -q \
+        --project="${FLAGS_build_project}" "${FLAGS_dest_image}"
+    else
+      fatal_echo "Image ${FLAGS_dest_image} already exists. (To replace run with flag --respin)"
+    fi
+
   gcloud compute ssh "${PZ[@]}" "${FLAGS_build_instance}" -- \
-    ./create_base_image_gce.sh
+    ./create_base_image_gce.sh \
+      "${FLAGS_repository_url}" "${FLAGS_repository_branch}" \
+      "${FLAGS_build_branch}" "${FLAGS_build_target}" "${FLAGS_build_id}"
+
+  update_dest_names
 
   gcloud compute instances delete -q \
     "${PZ[@]}" "${FLAGS_build_instance}"
 
   gcloud compute images create \
     --project="${FLAGS_build_project}" \
-    --source-disk="${FLAGS_dest_image}" \
+    --source-disk="${IMAGE_DISK}" \
     --source-disk-zone="${FLAGS_build_zone}" \
     --licenses=https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx \
     "${dest_family_flag[@]}" \
     "${FLAGS_dest_image}"
 
-  gcloud compute disks delete -q "${PZ[@]}" \
-    "${FLAGS_dest_image}"
+  gcloud compute disks delete -q \
+    "${PZ[@]}" "${IMAGE_DISK}"
 
   if [[ -n "${FLAGS_dest_project}" && "${FLAGS_dest_project}" != "${FLAGS_build_project}" ]]; then
     gcloud compute images create \
