@@ -53,7 +53,7 @@ if [[ -z "${build_id}" ]]; then
 fi
 
 # Writes dest image and family values into file
-name_values=("cf_version=${cf_version}" "FLAGS_build_id=${build_id}")
+name_values=("cf_version=${cf_version}" "build_id=${build_id}")
 printf "%s\n" "${name_values[@]}" > image_name_values
 
 # Install the cuttlefish build deps

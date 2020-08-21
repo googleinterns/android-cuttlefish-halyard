@@ -75,35 +75,6 @@ update_dest_names() {
 
 }
 
-get_cf_version() {
-  CF_VER=(*.dsc)
-  CF_VER=$(basename "${CF_VER/*_/}" .dsc)
-  CF_VER="${CF_VER//\./-}"
-}
-
-# Gets build artifacts from Android Build API
-fetch_build_artifacts() {
-
-  local target="$1"
-  local build_id="$2"
-  
-  FETCH_ARTIFACTS="$(mktemp)"
-  curl "https://www.googleapis.com/android/internal/build/v3/builds/$build_id/$target/attempts/latest/artifacts/fetch_cvd?alt=media" -o $FETCH_ARTIFACTS
-
-  if [[ -z "${FLAGS_dest_image}" ]]; then
-    FLAGS_dest_image="halyard-${cf_version}-${FLAGS_build_branch}-${FLAGS_build_target}-${FLAGS_build_id}"
-  fi
-  if [[ -z "${FLAGS_dest_family}" ]]; then
-    FLAGS_dest_family="halyard-${FLAGS_build_branch}-${FLAGS_build_target}"
-  fi
-
-  if [[ -n "${FLAGS_dest_family}" ]]; then
-    dest_family_flag=("--family=${FLAGS_dest_family}")
-  else
-    dest_family_flag=()
-  fi
-}
-
 
 main() {
   set -o errexit
