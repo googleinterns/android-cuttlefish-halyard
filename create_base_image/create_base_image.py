@@ -54,15 +54,15 @@ def fatal_error(msg):
     exit()
 
 def wait_for_instance():
-    not_running = True
-    while not_running:
+    not_running = 1
+    while not_running != 0:
         time.sleep(5)
         # uptime returns a value other than 0 when not successful
         not_running = os.system(f'gcloud compute ssh {args.build_instance} --zone={args.build_zone} -- uptime')
 
 def update_dest_names():
     os.system(f'gcloud compute scp {args.build_instance}:~/image_name_values \
-    name_values --zone={args.build_zone}')
+        name_values --zone={args.build_zone}')
 
     variables = {}
 
