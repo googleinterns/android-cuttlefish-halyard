@@ -74,7 +74,7 @@ def update_dest_names():
     cf_version = variables['cf_version']
     args.build_id = variables['build_id']
 
-    os.system(f'rm name_values')
+    os.remove('name_values')
 
     args.build_target = args.build_target.replace('_','-')
 
