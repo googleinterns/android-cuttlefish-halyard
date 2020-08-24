@@ -104,10 +104,6 @@ except:
 
 # BUILD INSTANCE CREATION
 
-build_image_family = driver.ex_get_image(
-  args.source_image_family,
-  args.source_image_project)
-
 build_volume = driver.create_volume(
     30, args.image_disk,
     location=args.build_zone,
