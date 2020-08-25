@@ -70,20 +70,9 @@ update_dest_names() {
     "${FLAGS_build_instance}:~/image_name_values" "${name_values}"
   while read -r line; do declare "$line"; done < "${name_values}"
 
+  FLAGS_build_id="${build_id}"
   FLAGS_build_target="${FLAGS_build_target//_/-}"
 
-  if [[ -z "${FLAGS_dest_image}" ]]; then
-    FLAGS_dest_image="halyard-${cf_version}-${FLAGS_build_branch}-${FLAGS_build_target}-${FLAGS_build_id}"
-  fi
-  if [[ -z "${FLAGS_dest_family}" ]]; then
-    FLAGS_dest_family="halyard-${FLAGS_build_branch}-${FLAGS_build_target}"
-  fi
-
-  if [[ -n "${FLAGS_dest_family}" ]]; then
-    dest_family_flag=("--family=${FLAGS_dest_family}")
-  else
-    dest_family_flag=()
-  fi
 }
 
 
@@ -91,7 +80,7 @@ main() {
   set -o errexit
   set -x
 
-  # SETUP AND SOURCE FILES EXTRACTION
+  # SETUP
 
   # Flags setup
   PZ=(--project=${FLAGS_build_project} --zone=${FLAGS_build_zone})
