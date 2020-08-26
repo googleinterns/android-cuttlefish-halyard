@@ -1,8 +1,9 @@
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import argparse
+import halyard_utils as utils
 from libcloud.compute.types import Provider
 from libcloud.compute.providers import get_driver
-import os
-import time
-import argparse
 
 # Parse flag arguments
 
@@ -27,7 +28,6 @@ add_flag('project', 'cloud-android-testing')
 add_flag('sig_server_addr', '127.0.0.1')
 add_flag('sig_server_port', '8443')
 
-
 args = parser.parse_args()
 
 
@@ -37,36 +37,23 @@ driver = ComputeEngine('', '',
                        datacenter=args.datacenter, project=args.project)
 
 
-def wait_for_instance(instance_name):
-    not_running = 1
-    while not_running != 0:
-        time.sleep(5)
-        # uptime returns a value other than 0 when not successful
-        not_running = os.system(f'gcloud compute ssh {instance_name} --zone={args.zone} -- uptime')
+# SETUP
 
-def fatal_error(msg):
-    print(f'Error: {msg}')
-    exit()
-
-
+# Set global vars
 args.target = args.target.replace('_','-')
+instance_name = f'halyard-{args.user_id}'
 image_family = f'halyard-{args.branch}-{args.target}'
 
 try:
-    img = driver.ex_get_image_from_family(image_family)
+    driver.ex_get_image_from_family(image_family)
 except:
-    fatal_error(f'Image family {args.image_family} does not exist.\n \
+    utils.fatal_error(f'Image family {image_family} does not exist.\n \
         New base images can be created using the `create_base_image` endpoint.')
 
-
-instance_name = f'halyard-{args.user_id}'
-
-try:
-    build_node = driver.ex_get_node(instance_name, args.zone)
-    driver.destroy_node(build_node)
-    print('successfully deleted existing instance with name', instance_name)
-except:
-    pass
+# Stops execution if instance already exists
+instance = utils.find_instance(driver, instance_name, args.zone)
+if instance:
+    fatal_error(f'Instance {instance_name} already exists.')
 
 build_node = driver.create_node(
     instance_name,
@@ -78,7 +65,7 @@ build_node = driver.create_node(
     ex_disk_size=30,
     ex_tags=args.tags)
 
-wait_for_instance(instance_name)
+utils.wait_for_instance(instance_name, args.zone)
 
 print('successfully created new instance', instance_name)
 
