@@ -53,7 +53,7 @@ except:
 # Stops execution if instance already exists
 instance = utils.find_instance(driver, instance_name, args.zone)
 if instance:
-    fatal_error(f'Instance {instance_name} already exists.')
+    utils.fatal_error(f'Instance {instance_name} already exists.')
 
 build_node = driver.create_node(
     instance_name,
