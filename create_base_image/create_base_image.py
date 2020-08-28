@@ -122,7 +122,10 @@ driver.attach_volume(
     build_node,
     build_volume)
 
-os.system(f'gcloud compute scp create_base_image_gce.sh {args.build_instance}: \
+src_files = ['create_base_image_gce.sh', 'download_artifacts.sh']
+src = ' '.join(list(map(str,src_files)))
+
+os.system(f'gcloud compute scp {src} {args.build_instance}: \
     --zone={args.build_zone}')
 
 

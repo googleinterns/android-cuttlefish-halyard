@@ -32,16 +32,6 @@ get_cf_version() {
   cf_version="${cf_version//\./-}"
 }
 
-# Gets build artifacts from Android Build API
-fetch_build_artifacts() {
-  local target="$1"
-  local build_id="$2"
-  
-  FETCH_ARTIFACTS="$(mktemp)"
-  curl "https://www.googleapis.com/android/internal/build/v3/builds/$build_id/$target/attempts/latest/artifacts/fetch_cvd?alt=media" -o $FETCH_ARTIFACTS
-  chmod +x $FETCH_ARTIFACTS
-  eval $FETCH_ARTIFACTS
-}
 
 fetch_cf_package "${repository_url}" "${repository_branch}" 
 get_cf_version
@@ -94,13 +84,6 @@ sudo mkdir /mnt/image
 sudo mount /dev/sdb1 /mnt/image
 cp "${debs[@]}" /mnt/image/tmp
 
-# Fetches build artifacts 
-sudo mkdir /mnt/image/usr/local/share/cuttlefish
-sudo chmod -R 777 /mnt/image/usr/local/share/cuttlefish
-pushd /mnt/image/usr/local/share/cuttlefish
-fetch_build_artifacts "${build_target}" "${build_id}"
-popd
-
 sudo mount -t sysfs none /mnt/image/sys
 sudo mount -t proc none /mnt/image/proc
 sudo mount --bind /dev/ /mnt/image/dev
@@ -113,9 +96,21 @@ sudo chroot /mnt/image /usr/bin/apt install -y "${tmp_debs[@]}"
 # install tools dependencies
 sudo chroot /mnt/image /usr/bin/apt install -y python
 sudo chroot /mnt/image /usr/bin/apt install -y openjdk-11-jre
-sudo chroot /mnt/image /usr/bin/apt install -y unzip bzip2 lzop
+sudo chroot /mnt/image /usr/bin/apt install -y unzip bzip2 lzop bsdtar
 sudo chroot /mnt/image /usr/bin/apt install -y aapt
 sudo chroot /mnt/image /usr/bin/apt install -y screen # needed by tradefed
+
+# Fetches build artifacts 
+sudo mkdir /mnt/image/usr/local/share/cuttlefish
+sudo chmod -R 777 /mnt/image/usr/local/share/cuttlefish
+sudo chmod 777 'download_artifacts.sh'
+sudo cp 'download_artifacts.sh' /mnt/image/usr/local/share/cuttlefish
+sudo target="${build_target}" build_id="${build_id}" \
+  chroot /mnt/image sh -c \
+    'cd /usr/local/share/cuttlefish; \
+    ./download_artifacts.sh ${target} ${build_id}; \
+    rm download_artifacts.sh'
+sudo chmod -R 777 /mnt/image/usr/local/share/cuttlefish
 
 sudo chroot /mnt/image /usr/bin/find /home -ls
 

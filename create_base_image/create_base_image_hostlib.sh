@@ -90,7 +90,7 @@ main() {
     build_tags=()
   fi
 
-  source_files=("create_base_image_gce.sh")
+  source_files=("create_base_image_gce.sh" "download_artifacts.sh")
 
   # Deletes instances and disks with names that will be used for build
   gcloud compute instances delete -q \
