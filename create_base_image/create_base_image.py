@@ -1,8 +1,9 @@
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import argparse
+import halyard_utils as utils
 from libcloud.compute.types import Provider
 from libcloud.compute.providers import get_driver
-import os
-import time
-import argparse
 
 # Parse flag arguments
 
@@ -49,17 +50,6 @@ driver = ComputeEngine('', '',
                        datacenter=args.datacenter, project=args.project)
 
 
-def fatal_error(msg):
-    print(f'Error: {msg}')
-    exit()
-
-def wait_for_instance():
-    not_running = 1
-    while not_running != 0:
-        time.sleep(5)
-        # uptime returns a value other than 0 when not successful
-        not_running = os.system(f'gcloud compute ssh {args.build_instance} --zone={args.build_zone} -- uptime')
-
 def update_dest_names():
     os.system(f'gcloud compute scp {args.build_instance}:~/image_name_values \
         name_values --zone={args.build_zone}')
@@ -85,21 +75,17 @@ def update_dest_names():
         args.dest_family = f'halyard-{args.build_branch}-{args.build_target}'
 
 
-# DELETE OBJECTS WITH NAMES WE NEED
+# SETUP
 
-try:
-    build_node = driver.ex_get_node(args.build_instance, args.build_zone)
+build_node = utils.find_instance(driver, args.build_instance, args.build_zone)
+if build_node:
     driver.destroy_node(build_node)
     print('successfully deleted', args.build_instance)
-except:
-    pass
 
-try:
-    build_volume = driver.ex_get_volume(args.image_disk, args.build_zone)
+build_volume = utils.find_disk(driver, args.image_disk, args.build_zone)
+if build_volume:
     driver.destroy_volume(build_volume)
     print('successfully deleted', args.image_disk)
-except:
-    pass
 
 
 # BUILD INSTANCE CREATION
@@ -112,12 +98,9 @@ build_volume = driver.create_volume(
 print('built', args.source_image_family, 'disk')
 
 gpu_type='nvidia-tesla-p100-vws'
-try:
-    driver.ex_get_accelerator_type(
-        gpu_type,
-        zone=args.build_zone)
-except:
-    fatal_error(f'Please use a zone with {gpu_type} GPUs available')
+gpu = utils.find_gpu(driver, gpu_type, args.build_zone)
+if not gpu:
+    utils.fatal_error(f'Please use a zone with {gpu_type} GPUs available')
 
 build_node = driver.create_node(
     args.build_instance,
@@ -133,7 +116,7 @@ build_node = driver.create_node(
     ex_tags=args.tags)
 print('successfully created', args.build_instance)
 
-wait_for_instance()
+utils.wait_for_instance(args.build_instance, args.build_zone)
 
 driver.attach_volume(
     build_node,
@@ -157,11 +140,11 @@ try:
 except:
     build_image = None
 
-if (build_image):
-    if (args.respin):
+if build_image:
+    if args.respin:
         driver.ex_delete_image(build_image)
     else:
-        fatal_error(f'''Image {args.dest_image} already exists.
+        utils.fatal_error(f'''Image {args.dest_image} already exists.
         (To replace run with flag --respin)''')
 
 driver.destroy_node(build_node)
