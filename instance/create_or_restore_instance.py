@@ -2,32 +2,23 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import argparse
 import halyard_utils as utils
-from libcloud.compute.types import Provider
-from libcloud.compute.providers import get_driver
+from halyard_utils import add_flag
 
 # Parse flag arguments
 parser = argparse.ArgumentParser()
 
-def add_flag(flag_name, default):
-    parser.add_argument(f'--{flag_name}', dest=flag_name,
-                        action='store', default=default)
-
 # New instance info
-add_flag('user_id', '00001')
-add_flag('zone', 'us-central1-b')
+add_flag(parser, 'user_id', '00001')
+add_flag(parser, 'zone', 'us-central1-b')
 parser.add_argument('--tag', action='append', dest='tags', default=[])
 
 # Base image version
-add_flag('branch', 'aosp-master')
-add_flag('target' ,'aosp_cf_x86_phone-userdebug')
-
-# GCE Project info
-add_flag('datacenter', 'us-central1-b')
-add_flag('project', 'cloud-android-testing')
+add_flag(parser, 'branch', 'aosp-master')
+add_flag(parser, 'target' ,'aosp_cf_x86_phone-userdebug')
 
 # Signaling server info
-add_flag('sig_server_addr', '127.0.0.1')
-add_flag('sig_server_port', '8443')
+add_flag(parser, 'sig_server_addr', '127.0.0.1')
+add_flag(parser, 'sig_server_port', '8443')
 
 args = parser.parse_args()
 

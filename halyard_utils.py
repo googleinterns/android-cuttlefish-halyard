@@ -1,6 +1,10 @@
 import os
 import time
 
+def add_flag(parser, flag_name, default):
+    parser.add_argument(f'--{flag_name}', dest=flag_name,
+                        action='store', default=default)
+
 def wait_for_instance(instance_name, zone):
     not_running = 1
     while not_running != 0:

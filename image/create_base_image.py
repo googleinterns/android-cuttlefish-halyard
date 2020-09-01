@@ -2,39 +2,35 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import argparse
 import halyard_utils as utils
-from libcloud.compute.types import Provider
-from libcloud.compute.providers import get_driver
+from halyard_utils import add_flag
 
 # Parse flag arguments
 
+# Parse flag arguments
 parser = argparse.ArgumentParser()
 
-def add_flag(flag_name, default):
-    parser.add_argument(f'--{flag_name}', dest=flag_name,
-                        action='store', default=default)
-
 # Base image info
-add_flag('source_image_family', 'debian-10')
-add_flag('source_image_project', 'debian-cloud')
+add_flag(parser, 'source_image_family', 'debian-10')
+add_flag(parser, 'source_image_project', 'debian-cloud')
 
 # Cuttlefish repo info
-add_flag('repository_url', 'https://github.com/google/android-cuttlefish.git')
-add_flag('repository_branch', 'main')
+add_flag(parser, 'repository_url', 'https://github.com/google/android-cuttlefish.git')
+add_flag(parser, 'repository_branch', 'main')
 
 # Build artifacts info
-add_flag('build_branch', 'aosp-master')
-add_flag('build_target' ,'aosp_cf_x86_phone-userdebug')
-add_flag('build_id', '')
+add_flag(parser, 'build_branch', 'aosp-master')
+add_flag(parser, 'build_target' ,'aosp_cf_x86_phone-userdebug')
+add_flag(parser, 'build_id', '')
 
 # Build instance info
-add_flag('build_instance', 'halyard-build')
-add_flag('build_zone', 'europe-west4-a')
+add_flag(parser, 'build_instance', 'halyard-build')
+add_flag(parser, 'build_zone', 'europe-west4-a')
 parser.add_argument('--tag', action='append', dest='tags', default=[])
 
 # New image info
-add_flag('dest_image', '')
-add_flag('dest_family', '')
-add_flag('image_disk', 'halyard-image-disk')
+add_flag(parser, 'dest_image', '')
+add_flag(parser, 'dest_family', '')
+add_flag(parser, 'image_disk', 'halyard-image-disk')
 parser.add_argument('--respin', action='store_true', default=False)
 
 # GCE Project info
