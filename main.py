@@ -40,7 +40,7 @@ class Instance(Resource):
 
     def put(self, user_id):
         body = request.json
-        new_instance = create_or_restore_instance(driver, body)
+        new_instance = create_or_restore_instance(driver, **body)
         return {"new_instance": new_instance}
 
     def delete(self, user_id):
@@ -57,7 +57,7 @@ class BaseImage(Resource):
 
     def put(self, image_name):
         body = request.json
-        new_image = create_base_image(driver, body)
+        new_image = create_base_image(driver, **body)
         return {"new_image": new_image}
     
     def delete(self, image_name):

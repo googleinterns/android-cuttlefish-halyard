@@ -1,44 +1,15 @@
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import argparse
 import halyard_utils as utils
-from halyard_utils import add_flag, set_args
 
 PATH = 'image'
 
-# Parse flag arguments
-parser = argparse.ArgumentParser()
-
-# Base image info
-add_flag(parser, 'source_image_family', 'debian-10')
-add_flag(parser, 'source_image_project', 'debian-cloud')
-
-# Cuttlefish repo info
-add_flag(parser, 'repository_url', 'https://github.com/google/android-cuttlefish.git')
-add_flag(parser, 'repository_branch', 'main')
-
-# Build artifacts info
-add_flag(parser, 'build_branch', 'aosp-master')
-add_flag(parser, 'build_target' ,'aosp_cf_x86_phone-userdebug')
-add_flag(parser, 'build_id', '')
-
-# Build instance info
-add_flag(parser, 'build_instance', 'halyard-build')
-add_flag(parser, 'build_zone', 'europe-west4-a')
-parser.add_argument('--tag', action='append', dest='tags', default=[])
-
-# New image info
-add_flag(parser, 'dest_image', '')
-add_flag(parser, 'dest_family', '')
-add_flag(parser, 'image_disk', 'halyard-image-disk')
-parser.add_argument('--respin', action='store_true', default=False)
-
-
-def update_dest_names():
+def get_dest_names(build_branch, build_target, build_id, build_instance, build_zone,
+                      dest_image, dest_family):
     """Updates cf_version and build_id values extracted from gce script to name the new image"""
 
-    os.system(f'gcloud compute scp {args.build_instance}:~/image_name_values \
-        {PATH}/image_name_values --zone={args.build_zone}')
+    os.system(f'gcloud compute scp {build_instance}:~/image_name_values \
+        {PATH}/image_name_values --zone={build_zone}')
 
     variables = {}
 
@@ -48,66 +19,72 @@ def update_dest_names():
             variables[name] = value.strip()
 
     cf_version = variables['cf_version']
-    args.build_id = variables['build_id']
+    build_id = variables['build_id']
 
     os.remove(f'{PATH}/image_name_values')
 
-    args.build_target = args.build_target.replace('_','-')
+    build_target = build_target.replace('_','-')
 
-    if not args.dest_image:
-        args.dest_image = f'halyard-{cf_version}-{args.build_branch}-{args.build_target}-{args.build_id}'
+    if not dest_image:
+        dest_image = f'halyard-{cf_version}-{build_branch}-{build_target}-{build_id}'
 
-    if not args.dest_family:
-        args.dest_family = f'halyard-{args.build_branch}-{args.build_target}'
+    if not dest_family:
+        dest_family = f'halyard-{build_branch}-{build_target}'
+
+    return {'dest_image': dest_image, 'dest_family': dest_family}
 
 
-def create_base_image(driver, body):
+def create_base_image(driver,
+        source_image_family='debian-10', source_image_project='debian-cloud',
+        repository_url='https://github.com/google/android-cuttlefish.git',
+        repository_branch='main', build_branch='aosp-master',
+        build_target='aosp_cf_x86_phone-userdebug', build_id='',
+        build_instance='halyard-build', build_zone='europe-west4-a', tags=[],
+        dest_image='', dest_family='', image_disk='halyard-image-disk', respin=False):
     """Creates new base image that holds Cuttlefish packages and Android build artifacts"""
 
     # SETUP
-
-    args = set_args(parser, body)
     
-    build_node = utils.find_instance(driver, args.build_instance, args.build_zone)
+    build_node = utils.find_instance(driver, build_instance, build_zone)
     if build_node:
         driver.destroy_node(build_node)
-        print('successfully deleted', args.build_instance)
+        print('successfully deleted', build_instance)
 
-    build_volume = utils.find_disk(driver, args.image_disk, args.build_zone)
+    build_volume = utils.find_disk(driver, image_disk, build_zone)
     if build_volume:
         driver.destroy_volume(build_volume)
-        print('successfully deleted', args.image_disk)
+        print('successfully deleted', image_disk)
 
 
     # BUILD INSTANCE CREATION
 
     build_volume = driver.create_volume(
-        30, args.image_disk,
-        location=args.build_zone,
-        ex_image_family=args.source_image_family)
+        30, image_disk,
+        location=build_zone,
+        ex_image_family=source_image_family)
 
-    print('built', args.source_image_family, 'disk')
+    print('built', source_image_family, 'disk')
 
     gpu_type='nvidia-tesla-p100-vws'
-    gpu = utils.find_gpu(driver, gpu_type, args.build_zone)
+    gpu = utils.find_gpu(driver, gpu_type, build_zone)
     if not gpu:
         utils.fatal_error(f'Please use a zone with {gpu_type} GPUs available')
 
     build_node = driver.create_node(
-        args.build_instance,
+        build_instance,
         'n1-standard-16',
         None,
-        location=args.build_zone,
-        ex_image_family=args.source_image_family,
+        location=build_zone,
+        ex_image_family=source_image_family,
         ex_accelerator_type=gpu_type,
         ex_on_host_maintenance='TERMINATE',
         ex_accelerator_count=1,
         ex_service_accounts=[{'scopes':['storage-ro']}],
         ex_disk_size=30,
-        ex_tags=args.tags)
-    print('successfully created', args.build_instance)
+        ex_tags=tags)
+    print('successfully created', build_instance)
 
-    utils.wait_for_instance(args.build_instance, args.build_zone)
+    utils.wait_for_instance(build_instance, build_zone)
 
     driver.attach_volume(build_node, build_volume)
 
@@ -115,42 +92,47 @@ def create_base_image(driver, body):
     src_files = [PATH + '/' + file for file in src_files]
     src = ' '.join(list(map(str,src_files)))
 
-    os.system(f'gcloud compute scp {src} {args.build_instance}: \
-        --zone={args.build_zone}')
+    os.system(f'gcloud compute scp {src} {build_instance}: \
+        --zone={build_zone}')
 
 
     # IMAGE CREATION
 
-    os.system(f'gcloud compute ssh --zone={args.build_zone} \
-        {args.build_instance} -- ./create_base_image_gce.sh \
-        {args.repository_url} {args.repository_branch} \
-        {args.build_branch} {args.build_target} {args.build_id}')
+    os.system(f'gcloud compute ssh --zone={build_zone} \
+        {build_instance} -- ./create_base_image_gce.sh \
+        {repository_url} {repository_branch} \
+        {build_branch} {build_target} {build_id}')
 
-    update_dest_names()
+    dest_names = get_dest_names(
+        build_branch, build_target, build_id,
+        build_instance, build_zone, dest_image, dest_family)
+    
+    dest_image = dest_names['dest_image']
+    dest_family = dest_names['dest_family']
 
     try:
-        build_image = driver.ex_get_image(args.dest_image)
+        build_image = driver.ex_get_image(dest_image)
     except:
         build_image = None
 
     if build_image:
-        if args.respin:
+        if respin:
             driver.ex_delete_image(build_image)
         else:
-            utils.fatal_error(f'''Image {args.dest_image} already exists.
+            utils.fatal_error(f'''Image {dest_image} already exists.
             (To replace run with flag --respin)''')
 
     driver.destroy_node(build_node)
 
     driver.ex_create_image(
-        args.dest_image,
+        dest_image,
         build_volume,
         ex_licenses=['https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx'],
-        family=args.dest_family
+        family=dest_family
     )
 
-    print(f'Created image {args.dest_image} in {args.dest_family} family')
+    print(f'Created image {dest_image} in {dest_family} family')
 
     driver.destroy_volume(build_volume)
 
-    return {"name": args.dest_image, "family": args.dest_family}
+    return {"name": dest_image, "family": dest_family}
