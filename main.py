@@ -39,7 +39,8 @@ class Instance(Resource):
         return {"instance": node}
 
     def put(self, user_id):
-        new_instance = create_or_restore_instance(driver)
+        body = request.json
+        new_instance = create_or_restore_instance(driver, body)
         return {"new_instance": new_instance}
 
     def delete(self, user_id):
@@ -55,7 +56,8 @@ class BaseImage(Resource):
         # FIXME : endpoint not ready
 
     def put(self, image_name):
-        new_image = create_base_image(driver)
+        body = request.json
+        new_image = create_base_image(driver, body)
         return {"new_image": new_image}
     
     def delete(self, image_name):

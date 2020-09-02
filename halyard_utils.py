@@ -5,6 +5,12 @@ def add_flag(parser, flag_name, default):
     parser.add_argument(f'--{flag_name}', dest=flag_name,
                         action='store', default=default)
 
+def set_args(parser, body):
+    args = parser.parse_args()
+    if body:
+        args.__dict__.update(body)
+    return args
+
 def wait_for_instance(instance_name, zone):
     not_running = 1
     while not_running != 0:

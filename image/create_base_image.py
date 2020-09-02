@@ -2,7 +2,7 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import argparse
 import halyard_utils as utils
-from halyard_utils import add_flag
+from halyard_utils import add_flag, set_args
 
 PATH = 'image'
 
@@ -33,8 +33,6 @@ add_flag(parser, 'dest_family', '')
 add_flag(parser, 'image_disk', 'halyard-image-disk')
 parser.add_argument('--respin', action='store_true', default=False)
 
-args = parser.parse_args()
-
 
 def update_dest_names():
     """Updates cf_version and build_id values extracted from gce script to name the new image"""
@@ -63,11 +61,13 @@ def update_dest_names():
         args.dest_family = f'halyard-{args.build_branch}-{args.build_target}'
 
 
-def create_base_image(driver):
+def create_base_image(driver, body):
     """Creates new base image that holds Cuttlefish packages and Android build artifacts"""
 
     # SETUP
 
+    args = set_args(parser, body)
+    
     build_node = utils.find_instance(driver, args.build_instance, args.build_zone)
     if build_node:
         driver.destroy_node(build_node)

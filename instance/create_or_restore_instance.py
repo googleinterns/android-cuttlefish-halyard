@@ -2,7 +2,7 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import argparse
 import halyard_utils as utils
-from halyard_utils import add_flag
+from halyard_utils import add_flag, set_args
 
 # Parse flag arguments
 parser = argparse.ArgumentParser()
@@ -19,8 +19,6 @@ add_flag(parser, 'target' ,'aosp_cf_x86_phone-userdebug')
 # Signaling server info
 add_flag(parser, 'sig_server_addr', '127.0.0.1')
 add_flag(parser, 'sig_server_port', '8443')
-
-args = parser.parse_args()
 
 
 def get_base_image_from_labels(user_disk):
@@ -53,14 +51,14 @@ def set_base_image_labels(driver, user_disk, img_name, branch, target):
          'target': target, 'build_id': build_id})
 
 
-def create_or_restore_instance(driver):
+def create_or_restore_instance(driver, body):
     """Restores instance with existing user disk and original base image.
        Creates a new instance with latest image if user disk doesn't exist.
        Stores userdata.img in external GCP disk.
        Launches Cuttlefish if creation is successful."""
 
     # SETUP
-
+    args = set_args(parser, body)
     args.target = args.target.replace('_','-')
     instance_name = f'halyard-{args.user_id}'
     disk_name = f'halyard-user-{args.user_id}'
@@ -151,12 +149,11 @@ def create_or_restore_instance(driver):
     return {"name": instance_name}
 
 
-def create_instance(driver):
+def create_instance(driver, body):
     """Creates a new Cuttlefish instance and launches it.
        Does not store userdata.img in external GCP disk."""
 
-    # SETUP
-
+    args = set_args(parser, body)
     args.target = args.target.replace('_','-')
     instance_name = f'halyard-{args.user_id}'
     image_family = f'halyard-{args.branch}-{args.target}'
