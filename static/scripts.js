@@ -1,5 +1,5 @@
 
-ajax_call = function(msg, url, type, body) {
+ajaxCall = function(msg, url, type, body) {
     console.log(msg);
     return $.ajax({
         url: url,
