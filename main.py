@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, render_template, jsonify
 from flask_restful import Api, Resource, abort
+import requests
 import argparse
 from halyard_utils import add_flag
 from image.create_base_image import create_base_image
@@ -76,7 +77,7 @@ class BaseImageList(Resource):
         body = request.json
         new_image = create_base_image(driver, **body)
         return {"new_image": new_image}
-    
+
 class Disk(Resource):
     """Halyard disk manager"""
 
@@ -97,12 +98,30 @@ api.add_resource(Instance, "/instance/<string:instance_name>")
 api.add_resource(BaseImage, "/image/<string:image_name>")
 api.add_resource(Disk, "/disk/<string:disk_name>")
 
-# Extra endpoints
+# Demo UI Endpoints
 
-@app.route('/list')
-def list_gce_machines():
-    nodes = list_nodes(driver)
-    return nodes
+BASE = "http://127.0.0.1:5000/"
+
+@app.route('/')
+def index():
+    instances = requests.get(BASE + "instance-list").json()['instances']
+    disks = requests.get(BASE + "disk-list").json()['disks']
+    return render_template('instances.html', instances=instances, disks=disks)
+
+@app.route('/instances')
+def instances_page():
+    instances = requests.get(BASE + "instance-list").json()['instances']
+    disks = requests.get(BASE + "disk-list").json()['disks']
+    return render_template('instances.html', instances=instances, disks=disks)
+
+@app.route('/images')
+def images_page():
+    images = requests.get(BASE + "image-list").json()['images']
+    return render_template('images.html', images=images)
+
+@app.route('/instance/connect/<string:instance_name>')
+def enter_instance(instance_name):
+    return {'connect': instance_name}
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
