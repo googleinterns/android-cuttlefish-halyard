@@ -2,9 +2,11 @@ from flask import Flask, request, jsonify
 from flask_restful import Api, Resource, abort
 import argparse
 from halyard_utils import add_flag
-from instance.list_nodes import list_nodes, get_node
 from image.create_base_image import create_base_image
 from instance.create_or_restore_instance import create_or_restore_instance, create_instance
+from instance.node_manager import list_nodes, get_node, delete_node
+from image.image_manager import list_images, get_image, delete_image
+from disk.disk_manager import list_disks, delete_disk, list_stopped_disks
 
 from libcloud.compute.types import Provider
 from libcloud.compute.providers import get_driver
@@ -32,40 +34,68 @@ def abort_if_none(obj, name):
 class Instance(Resource):
     """Cuttlefish instance manager"""
 
-    def get(self, user_id):
-        instance_name = f'halyard-{user_id}'
-        node = get_node(driver, instance_name)
+    def get(self, instance_name):
+        node = get_node(driver, instance_name, args.datacenter)
         abort_if_none(node, instance_name)
         return {"instance": node}
 
-    def put(self, user_id):
+    def delete(self, instance_name):
+        return delete_node(driver, instance_name, args.datacenter)
+
+class InstanceList(Resource):
+    """Shows a list of all instances and creates new ones"""
+
+    def get(self):
+        nodes = list_nodes(driver)
+        return {"instances": nodes}
+
+    def post(self):
         body = request.json
         new_instance = create_or_restore_instance(driver, **body)
         return {"new_instance": new_instance}
-
-    def delete(self, user_id):
-        instance_name = f'halyard-{user_id}'
-        return {"deleted_instance": instance_name}
-        # FIXME : endpoint not ready
 
 class BaseImage(Resource):
     """Halyard base image manager"""
 
     def get(self, image_name):
-        return {"image": image_name}
-        # FIXME : endpoint not ready
+        image = get_image(driver, image_name)
+        abort_if_none(image, image_name)
+        return {"image": image}
+    
+    def delete(self, image_name):
+        return delete_image(driver, image_name)
 
-    def put(self, image_name):
+class BaseImageList(Resource):
+    """Shows a list of all base images and creates new ones"""
+
+    def get(self):
+        images = list_images(driver)
+        return {"images": images}
+
+    def post(self):
         body = request.json
         new_image = create_base_image(driver, **body)
         return {"new_image": new_image}
     
-    def delete(self, image_name):
-        return {"deleted_image": image_name}
-        # FIXME : endpoint not ready
+class Disk(Resource):
+    """Halyard disk manager"""
 
-api.add_resource(Instance, "/instance/<string:user_id>")
+    def delete(self, disk_name):
+        return delete_disk(driver, disk_name, args.datacenter)
+
+class DiskList(Resource):
+    """Shows a list of disks which can be used to restore instances"""
+
+    def get(self):
+        stopped_instances = list_stopped_disks(driver)
+        return {"disks": stopped_instances}
+
+api.add_resource(InstanceList, "/instance-list")
+api.add_resource(BaseImageList, "/image-list")
+api.add_resource(DiskList, "/disk-list")
+api.add_resource(Instance, "/instance/<string:instance_name>")
 api.add_resource(BaseImage, "/image/<string:image_name>")
+api.add_resource(Disk, "/disk/<string:disk_name>")
 
 # Extra endpoints
 
