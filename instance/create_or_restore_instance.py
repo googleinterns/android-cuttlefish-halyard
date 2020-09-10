@@ -125,7 +125,8 @@ def create_or_restore_instance(driver,
         --start_webrtc_sig_server=false \
         --webrtc_device_id={instance_name} \
         --data_image=/mnt/user_data/userdata.img \
-        --data_policy=create_if_missing --blank_data_image_mb=30000')
+        --data_policy=create_if_missing --blank_data_image_mb=30000 \
+        --report_anonymous_usage_stats=y')
 
     print('launched cuttlefish on', instance_name)
 
@@ -174,7 +175,8 @@ def create_instance(driver,
         --webrtc_sig_server_addr={sig_server_addr} \
         --webrtc_sig_server_port={sig_server_port} \
         --start_webrtc_sig_server=false \
-        --webrtc_device_id={instance_name}')
+        --webrtc_device_id={instance_name} \
+        --report_anonymous_usage_stats=y')
 
     print('launched cuttlefish on', instance_name)
 
