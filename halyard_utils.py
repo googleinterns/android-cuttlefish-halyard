@@ -23,6 +23,13 @@ def find_instance(driver, instance_name, zone):
         instance = None
     return instance
 
+def find_image(driver, image_name):
+    try:
+        image = driver.ex_get_image(image_name)
+    except:
+        image = None
+    return image
+
 def find_disk(driver, disk_name, zone):
     try:
         disk = driver.ex_get_volume(disk_name, zone)
