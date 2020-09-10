@@ -3,10 +3,8 @@ from flask_restful import Api, Resource, abort
 import requests
 import argparse
 from halyard_utils import add_flag
-from image.create_base_image import create_base_image
-from instance.create_or_restore_instance import create_or_restore_instance, create_instance
-from instance.node_manager import list_nodes, get_node, delete_node
-from image.image_manager import list_images, get_image, delete_image
+from instance.node_manager import list_nodes, get_node, delete_node, create_or_restore_instance
+from image.image_manager import list_images, get_image, delete_image, create_base_image
 from disk.disk_manager import list_disks, delete_disk, list_stopped_disks
 
 from libcloud.compute.types import Provider
