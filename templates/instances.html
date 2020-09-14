@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block head %}
+  <title>Instances</title>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+  <h2>Active Instances</h2>
+  {% if instances|length < 1 %}
+  <h4>There are no active instances.</h4>
+  {% else %}
+  <table class="table">
+    {% for instance in instances %}
+      <tr>
+        <td>{{ instance['name'] }}</td>
+        <td>
+          <a class="btn btn-link" href="/instance/connect/{{instance.name}}">connect</a>
+        </td>
+        <td>
+          <a class="btn btn-link" href="/instance/{{instance.name}}">info</a>
+        </td>
+        <td>
+          <input class="btn btn-link" value="stop" type="button" onclick="stopInstance(`{{instance['name']}}`)">
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <h2>User Disks</h2>
+  {% if disks|length < 1 %}
+  <h4>There are no user disks.</h4>
+  {% else %}
+  <table class="table">
+    {% for disk in disks %}
+      <tr>
+        <td>{{ disk.name }}</td>
+        <td>
+          <input class="btn btn-link" value="restore" type="button" onclick="restoreDisk(`{{disk['name']}}`)">
+        </td>
+        <td>
+          <input class="btn btn-link" value="delete" type="button" onclick="deleteDisk(`{{disk['name']}}`)">
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <input class="btn btn-primary" value="+ New Instance" type="button" onclick="createNewInstance()">
+  
+</div>
+
+{% endblock %}

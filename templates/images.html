@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Images</title>
+
+{% endblock %}
+
+{% block body %}
+<div class="container">
+  <h2>Base Images</h2>
+  {% if images|length < 1 %}
+  <h4>There are no base images.</h4>
+  {% else %}
+  <table class="table">
+    {% for image in images %}
+      <tr>
+        <td>{{ image.name }}</td>
+        <td>
+          <a class="btn btn-link" href="/image/{{image.name}}">info</a>
+        </td>
+        <td>
+          <input class="btn btn-link" value="delete" type="button" onclick="deleteImage(`{{image['name']}}`)">
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <input class="btn btn-primary" value="+ New Image" type="button" onclick="createNewImage()">
+
+</div>
+{% endblock %}

@@ -2,6 +2,36 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import halyard_utils as utils
 
+def list_nodes(driver):
+    nodes = driver.list_nodes()
+    node_list = []
+    for node in nodes:
+        node_list.append({"name": node.name,
+                          "creationTimestamp": node.extra['creationTimestamp'],
+                          "image": node.extra['image'],
+                          "public_ips": node.public_ips})
+    halyard_nodes = list(filter(lambda x: x['name'].startswith('halyard'), node_list))
+    return halyard_nodes
+
+def get_node(driver, instance_name, zone):
+    node = utils.find_instance(driver, instance_name, zone)
+    if node:
+        return {"name": node.name,
+                "creationTimestamp": node.extra['creationTimestamp'],
+                "image": node.extra['image'],
+                "public_ips": node.public_ips}
+    else:
+        return {}
+
+def delete_node(driver, instance_name, zone):
+    node = utils.find_instance(driver, instance_name, zone)
+    if node:
+        driver.destroy_node(node)
+        return {"stopped_instance": instance_name}
+    else:
+        return {"error": "node not found"}
+
+
 def get_base_image_from_labels(user_disk):
     """Gets original base image from GCP disk labels"""
 
@@ -125,7 +155,8 @@ def create_or_restore_instance(driver,
         --start_webrtc_sig_server=false \
         --webrtc_device_id={instance_name} \
         --data_image=/mnt/user_data/userdata.img \
-        --data_policy=create_if_missing --blank_data_image_mb=30000')
+        --data_policy=create_if_missing --blank_data_image_mb=30000 \
+        --report_anonymous_usage_stats=y')
 
     print('launched cuttlefish on', instance_name)
 
@@ -174,7 +205,8 @@ def create_instance(driver,
         --webrtc_sig_server_addr={sig_server_addr} \
         --webrtc_sig_server_port={sig_server_port} \
         --start_webrtc_sig_server=false \
-        --webrtc_device_id={instance_name}')
+        --webrtc_device_id={instance_name} \
+        --report_anonymous_usage_stats=y')
 
     print('launched cuttlefish on', instance_name)
 

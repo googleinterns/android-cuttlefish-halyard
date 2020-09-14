@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <a class="navbar-brand" href="#">Halyard Demo</a>
+    <div id="navbarNavAltMarkup">
+      <div class="navbar-nav">
+        <a class="nav-item nav-link" href="/instances">Instances</a>
+        <a class="nav-item nav-link" href="/images">Images</a>
+      </div>
+    </div>
+  </nav>
+
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {% block navbar %}{% endblock %}
+  {% block body %}{% endblock %}
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="/static/scripts.js" charset="utf-8"></script>
+</html>
