@@ -147,18 +147,7 @@ def create_or_restore_instance(driver,
         sudo chmod 777 /mnt/user_data/userdata.img')
     # FIXME : should assign specific user permissions
 
-    os.system(f'gcloud compute ssh --zone={zone} {instance_name} -- \
-        HOME=/usr/local/share/cuttlefish /usr/local/share/cuttlefish/bin/launch_cvd \
-        --start_webrtc --daemon \
-        --webrtc_sig_server_addr={sig_server_addr} \
-        --webrtc_sig_server_port={sig_server_port} \
-        --start_webrtc_sig_server=false \
-        --webrtc_device_id={instance_name} \
-        --data_image=/mnt/user_data/userdata.img \
-        --data_policy=create_if_missing --blank_data_image_mb=30000 \
-        --report_anonymous_usage_stats=y')
-
-    print('launched cuttlefish on', instance_name)
+    launch_cvd(instance_name, zone, sig_server_addr, sig_server_port)
 
     return {"name": instance_name}
 
@@ -199,15 +188,27 @@ def create_instance(driver,
 
     print('successfully created new instance', instance_name)
 
-    os.system(f'gcloud compute ssh --zone={zone} {instance_name} -- \
+    launch_cvd(instance_name, zone, sig_server_addr, sig_server_port, False)
+
+    return {"name": instance_name}
+
+def launch_cvd(instance_name, zone, sig_server_addr, sig_server_port, use_user_data=True):
+    """Launch cvd on given instance and connect to operator on given address.
+       If use_user_data is True it uses existing user data disk."""
+
+    launch_command = f'gcloud compute ssh --zone={zone} {instance_name} -- \
         HOME=/usr/local/share/cuttlefish /usr/local/share/cuttlefish/bin/launch_cvd \
         --start_webrtc --daemon \
         --webrtc_sig_server_addr={sig_server_addr} \
         --webrtc_sig_server_port={sig_server_port} \
         --start_webrtc_sig_server=false \
         --webrtc_device_id={instance_name} \
-        --report_anonymous_usage_stats=y')
+        --report_anonymous_usage_stats=y'
 
-    print('launched cuttlefish on', instance_name)
+    if use_user_data:
+        launch_command += ' --data_image=/mnt/user_data/userdata.img \
+            --data_policy=create_if_missing --blank_data_image_mb=30000'
 
-    return {"name": instance_name}
+    os.system(launch_command)
+
+    print(f'Launched cuttlefish on {instance_name} at {sig_server_addr}:{sig_server_port}')
