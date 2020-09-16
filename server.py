@@ -182,20 +182,3 @@ def connect_client(ws):
 @app.route('/')
 def hello():
     return 'Hello World'
-
-# Add the static files:
-# * index.html
-# * js/app.js
-# * js/cf_webrtc.js
-# * style.css
-# * js/logcat.js?
-
-if __name__ == "__main__":
-    # You need gevent to be able to use websockets
-    # To run the app execute this: gunicorn -k flask_sockets.worker server:app
-    # Flask-Socket needs to be installed through pip (more details in
-    # https://github.com/heroku-python/flask-sockets)
-    from gevent import pywsgi
-    from geventwebsocket.handler import WebSocketHandler
-    server = pywsgi.WSGIServer(('', 8443), app, handler_class=WebSocketHandler)
-    server.serve_forever()
