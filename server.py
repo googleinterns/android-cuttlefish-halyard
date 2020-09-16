@@ -39,7 +39,7 @@ class Client:
     def forward_client_message(self, message):
         device_ws = self.device.ws
         client_msg = {}
-        client_msg['type'] = 'client_msg'
+        client_msg['message_type'] = 'client_msg'
         client_msg['client_id'] = self.client_id
         client_msg['payload'] = message['payload']
         send_data_ws(device_ws, client_msg)
@@ -76,14 +76,14 @@ class Client:
             print(f'Forwarded message from client {self.client_id} to device {self.device.device_id}.')
 
     def process_request(self, message):
-        if 'type' not in message:
-            send_error('Missing message type')
-        elif message['type'] == 'connect':
+        if 'message_type' not in message:
+            send_error('Missing field message_type')
+        elif message['message_type'] == 'connect':
             self.handle_connect(message)
-        elif message['type'] == 'forward':
+        elif message['message_type'] == 'forward':
             self.handle_forward(message)
         else:
-            send_error(f'Unknown message type: {message["type"]}')
+            send_error(f'Unknown message type: {message["message_type"]}')
 
 
 class Device:
@@ -100,7 +100,7 @@ class Device:
         client_id = message['client_id']
         client_ws = self.clients[client_id].ws
         device_msg = {}
-        device_msg['type'] = 'device_msg'
+        device_msg['message_type'] = 'device_msg'
         device_msg['payload'] = message['payload']
         send_data_ws(client_ws, device_msg)
 
@@ -138,14 +138,14 @@ class Device:
             print(f'Forwarded message from device {self.device_id} to client {client_id}.')
 
     def process_request(self, message):
-        if 'type' not in message:
-            send_error('Missing message type')
-        elif message['type'] == 'register':
+        if 'message_type' not in message:
+            send_error('Missing field message_type')
+        elif message['message_type'] == 'register':
             self.handle_registration(message)
-        elif message['type'] == 'forward':
+        elif message['message_type'] == 'forward':
             self.handle_forward(message)
         else:
-            send_error(f'Unknown message type: {message["type"]}')
+            send_error(f'Unknown message type: {message["message_type"]}')
 
     def register_client(self, client):
         client_id = str(self.client_number)
