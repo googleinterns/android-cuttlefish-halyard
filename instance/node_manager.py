@@ -65,7 +65,7 @@ def set_base_image_labels(driver, user_disk, img_name, branch, target):
 def create_or_restore_instance(driver,
         user_id='00001', zone='us-central1-b', tags=[],
         branch='aosp-master', target='aosp_cf_x86_phone-userdebug',
-        sig_server_addr='127.0.0.1', sig_server_port='8443'):
+        sig_server_addr='10.128.0.45', sig_server_port='8443'):
     """Restores instance with existing user disk and original base image.
        Creates a new instance with latest image if user disk doesn't exist.
        Stores userdata.img in external GCP disk.
@@ -155,7 +155,7 @@ def create_or_restore_instance(driver,
 def create_instance(driver,
         user_id='00001', zone='us-central1-b', tags=[],
         branch='aosp-master', target='aosp_cf_x86_phone-userdebug',
-        sig_server_addr='127.0.0.1', sig_server_port='8443'):
+        sig_server_addr='10.128.0.45', sig_server_port='8443'):
     """Creates a new Cuttlefish instance and launches it.
        Does not store userdata.img in external GCP disk."""
 
