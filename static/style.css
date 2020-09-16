@@ -1,0 +1,115 @@
+/*
+ * Copyright (C) 2019 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+ body {
+    background-color:black;
+    margin: 0;
+}
+
+#device_selector {
+    color: whitesmoke;
+}
+#device_selector li.device_entry {
+    cursor: pointer;
+}
+
+#refresh_list {
+    cursor: pointer;
+}
+
+#device_list .device_entry button {
+    margin-left: 10px;
+}
+
+
+#device_connection {
+    visibility: hidden;
+}
+
+#device_connection button.selected {
+    background-color: #aaaaaa;
+    border-style: solid;
+    border-color: #aaaaaa;
+}
+
+#control_view {
+    text-align: left;
+    padding: 10px;
+    min-width: 450px;
+}
+
+/* Screens >1000px place the device view on the left and the control
+ * view on the right. Other screens have deview view on top and control
+ * view on bottom. */
+@media screen and (min-width: 1000px) {
+    #device_view {
+        float: left;
+        height: 100vh;
+    }
+    #control_view {
+        float: left;
+    }
+}
+
+#deviceScreen {
+    max-width: 100%;
+    max-height: 100%;
+    touch-action: none;
+}
+
+#control_panel {
+    font-family: 'Open Sans', sans-serif;
+}
+
+#control_panel h2 {
+    color: white;
+}
+
+#control_panel button {
+    height: 60px;
+    min-width: 60px;
+    display: inline-block;
+    margin: 10px 10px;
+    font-size: 48px;
+    border-radius: 8px;
+    border: none;
+    background-color: #dbdbdb;
+    transition-duration: 0.2s;
+}
+#control_panel button:hover {
+    background-color: #c9c9c9;
+}
+
+#device_details {
+    font-family: 'Open Sans', sans-serif;
+    color: white;
+    background-color: #383838;
+    margin-top: 20px;
+    padding: 20px;
+    padding-top: 1px;
+}
+#device_details span {
+    white-space: pre;
+}
+
+#logcat {
+    display: none;
+    font-family: monospace;
+    padding: 10px;
+    color: #aaaaaa;
+    background-color: black;
+    margin-top: 40px;
+}
