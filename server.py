@@ -150,7 +150,7 @@ class Device:
             send_error(f'Unknown message type: {message["message_type"]}')
 
     def register_client(self, client):
-        client_id = str(self.client_number)
+        client_id = self.client_number
         client.client_id = client_id
         self.clients[client_id] = client
         self.client_number += 1
