@@ -33,8 +33,10 @@ class Client:
 
     def send_device_info(self):
         client_ws = self.ws
-        device_info = self.device.device_info
-        send_data_ws(client_ws, device_info)
+        device_info_msg = {}
+        device_info_msg['message_type'] = 'device_info'
+        device_info_msg['device_info'] = self.device.device_info
+        send_data_ws(client_ws, device_info_msg)
     
     def forward_client_message(self, message):
         device_ws = self.device.ws
