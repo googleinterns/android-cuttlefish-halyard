@@ -70,9 +70,9 @@ function ConnectToDevice(device_id) {
   createControlPanelButton('volumedown', 'Volume Down', 'volume_down');
   createControlPanelButton('volumeup', 'Volume Up', 'volume_up');
 
-  let options = {
+  let options = {      
     wsUrl: ((location.protocol == 'http:') ? 'ws://' : 'wss://') +
-      location.host + '/connect_client',
+      operator_host + '/connect_client',
   };
 
   import('./cf_webrtc.js')
@@ -266,35 +266,4 @@ function ConnectDeviceCb(dev_id) {
   ConnectToDevice(dev_id);
 }
 
-function ShowNewDeviceList(device_ids) {
-  let ul = document.getElementById('device_list');
-  ul.innerHTML = "";
-  let count = 1;
-  for (const dev_id of device_ids) {
-    const button_id = 'connect_' + count++;
-    ul.innerHTML += ('<li class="device_entry" title="Connect to ' + dev_id
-                     + '">' + dev_id + '<button id="' + button_id
-                     + '" >Connect</button></li>');
-    document.getElementById(button_id).addEventListener(
-        'click', evt => ConnectDeviceCb(dev_id));
-  }
-}
-
-function UpdateDeviceList() {
-  let url = ((location.protocol == 'http:') ? 'ws:' : 'wss:') + location.host +
-    '/list_devices';
-  let ws = new WebSocket(url);
-  ws.onopen = () => {
-    ws.send("give me those device ids");
-  };
-  ws.onmessage = msg => {
-   let device_ids = JSON.parse(msg.data);
-    ShowNewDeviceList(device_ids);
-  };
-}
-
-// Get any devices that are already connected
-UpdateDeviceList();
-// Update the list at the user's request
-document.getElementById('refresh_list')
-    .addEventListener('click', evt => UpdateDeviceList());
+ConnectDeviceCb(device_id);
