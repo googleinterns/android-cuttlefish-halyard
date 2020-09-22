@@ -38,13 +38,11 @@ class Client:
         device_info_msg['device_info'] = self.device.device_info
         send_data_ws(client_ws, device_info_msg)
     
-    def forward_client_message(self, message):
-        device_ws = self.device.ws
-        client_msg = {}
-        client_msg['message_type'] = 'client_msg'
-        client_msg['client_id'] = self.client_id
-        client_msg['payload'] = message['payload']
-        send_data_ws(device_ws, client_msg)
+    def forward_device_message(self, message):
+        device_msg = {}
+        device_msg['message_type'] = 'device_msg'
+        device_msg['payload'] = message['payload']
+        send_data_ws(self.ws, device_msg)
 
     def handle_connect(self, message):
         """Connects client user to device"""
@@ -74,7 +72,7 @@ class Client:
         elif 'payload' not in message:
             send_error('Missing payload field.')
         else:
-            self.forward_client_message(message)
+            self.device.forward_client_message(self.client_id, message)
             print(f'Forwarded message from client {self.client_id} to device {self.device.device_id}.')
 
     def process_request(self, message):
@@ -98,13 +96,12 @@ class Device:
     def __init__(self, ws):
         self.ws = ws
 
-    def forward_device_message(self, message):
-        client_id = message['client_id']
-        client_ws = self.clients[client_id].ws
-        device_msg = {}
-        device_msg['message_type'] = 'device_msg'
-        device_msg['payload'] = message['payload']
-        send_data_ws(client_ws, device_msg)
+    def forward_client_message(self, client_id, message):
+        client_msg = {}
+        client_msg['message_type'] = 'client_msg'
+        client_msg['client_id'] = client_id
+        client_msg['payload'] = message['payload']
+        send_data_ws(self.ws, client_msg)
 
     def handle_registration(self, message):
         """Registers device id and info in device list and sends config"""
@@ -136,7 +133,8 @@ class Device:
             send_error(f'Unregistered client id {message["client_id"]}.')
         else:
             client_id = message['client_id']
-            self.forward_device_message(message)
+            client = self.clients[client_id]
+            client.forward_device_message(message)
             print(f'Forwarded message from device {self.device_id} to client {client_id}.')
 
     def process_request(self, message):
