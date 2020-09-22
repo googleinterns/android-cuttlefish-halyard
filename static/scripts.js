@@ -19,10 +19,11 @@ ajaxCall = function(msg, url, type, body) {
 // INSTANCES
 
 createNewInstance = function() {
+    var userId = document.getElementById("userIdInput").value;
     let msg = 'New Instance AJAX call'
     let url = 'instance-list'
     let type = 'POST'
-    let body = {"tags": ["kradtke-ssh"]}
+    let body = {"user_id": userId, "tags": ["kradtke-ssh"]}
     return ajaxCall(msg, url, type, body)
 }
 

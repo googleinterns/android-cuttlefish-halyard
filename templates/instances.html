@@ -28,9 +28,12 @@
   </table>
   {% endif %}
 
+  <input class="mb-4" type="text" placeholder="User id" id="userIdInput">
+  <input class="btn btn-primary" value="+ New Instance" type="button" onclick="createNewInstance()">
+
   <h2>User Disks</h2>
   {% if disks|length < 1 %}
-  <h4>There are no user disks.</h4>
+  <h4>There are no user disks to restore.</h4>
   {% else %}
   <table class="table">
     {% for disk in disks %}
@@ -47,8 +50,6 @@
   </table>
   {% endif %}
 
-  <input class="btn btn-primary" value="+ New Instance" type="button" onclick="createNewInstance()">
-  
 </div>
 
 {% endblock %}
