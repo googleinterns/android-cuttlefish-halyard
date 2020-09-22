@@ -1,4 +1,7 @@
 
+const SIG_SERVER_ADDR = "10.128.0.45"
+const SIG_SERVER_PORT = "8443"
+
 ajaxCall = function(msg, url, type, body) {
     console.log(msg);
     return $.ajax({
@@ -23,7 +26,8 @@ createNewInstance = function() {
     let msg = 'New Instance AJAX call'
     let url = 'instance-list'
     let type = 'POST'
-    let body = {"user_id": userId, "tags": ["kradtke-ssh"]}
+    let body = {"user_id": userId, "sig_server_addr": SIG_SERVER_ADDR,
+                "sig_server_port": SIG_SERVER_PORT, "tags": ["kradtke-ssh"]}
     return ajaxCall(msg, url, type, body)
 }
 
@@ -46,11 +50,12 @@ stopInstance = function(instance_name) {
 // DISKS
 
 restoreDisk = function(disk_name) {
-    let user_id = disk_name.replace(/^(halyard-user-)/,"");
+    let userId = disk_name.replace(/^(halyard-user-)/,"");
     let msg = 'Restore Disk AJAX call'
     let url = 'instance-list'
     let type = 'POST'
-    let body = {"user_id": user_id, "tags": ["kradtke-ssh"]}
+    let body = {"user_id": userId, "sig_server_addr": SIG_SERVER_ADDR,
+                "sig_server_port": SIG_SERVER_PORT, "tags": ["kradtke-ssh"]}
     return ajaxCall(msg, url, type, body)
 }
 
