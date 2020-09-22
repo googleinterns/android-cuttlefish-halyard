@@ -162,25 +162,21 @@ class Device:
 def register_device(ws):
     print('ws connected to /register_device')
     device = Device(ws)
-    while not ws.closed:
-        raw_message = ws.receive()
-        message = json.loads(raw_message)
-        device.process_request(message)
-    if device.device_id:
-        devices.pop(device.device_id)
+        while not ws.closed:
+            raw_message = ws.receive()
+            message = json.loads(raw_message)
+            device.process_request(message)
+        if device.device_id:
+            devices.pop(device.device_id)
 
 @sockets.route('/connect_client')
 def connect_client(ws):
     print('ws connected to /connect_client')
     client = Client(ws)
-    while not ws.closed:
-        raw_message = ws.receive()
-        message = json.loads(raw_message)
-        client.process_request(message)
-    if client.device:
+        while not ws.closed:
+            raw_message = ws.receive()
+            message = json.loads(raw_message)
+            client.process_request(message)
+        if client.device:
         device_id = client.device.device_id
         devices[device_id].unregister_client(client.client_id)
-
-@app.route('/')
-def hello():
-    return 'Hello World'

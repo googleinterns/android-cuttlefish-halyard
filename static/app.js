@@ -257,13 +257,4 @@ function ConnectToDevice(device_id) {
 
 /******************************************************************************/
 
-function ConnectDeviceCb(dev_id) {
-  console.log('Connect: ' + dev_id);
-  // Hide the device selection screen
-  document.getElementById('device_selector').style.display = 'none';
-  // Show the device control screen
-  document.getElementById('device_connection').style.visibility = 'visible';
-  ConnectToDevice(dev_id);
-}
-
-ConnectDeviceCb(device_id);
+ConnectToDevice(device_id);

@@ -19,26 +19,6 @@
     margin: 0;
 }
 
-#device_selector {
-    color: whitesmoke;
-}
-#device_selector li.device_entry {
-    cursor: pointer;
-}
-
-#refresh_list {
-    cursor: pointer;
-}
-
-#device_list .device_entry button {
-    margin-left: 10px;
-}
-
-
-#device_connection {
-    visibility: hidden;
-}
-
 #device_connection button.selected {
     background-color: #aaaaaa;
     border-style: solid;
