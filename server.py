@@ -160,21 +160,27 @@ class Device:
 def register_device(ws):
     print('ws connected to /register_device')
     device = Device(ws)
+    try:
         while not ws.closed:
             raw_message = ws.receive()
             message = json.loads(raw_message)
             device.process_request(message)
+    except:
         if device.device_id:
             devices.pop(device.device_id)
+            print(f'deleted device {device.device_id} from device list.')
 
 @sockets.route('/connect_client')
 def connect_client(ws):
     print('ws connected to /connect_client')
     client = Client(ws)
+    try:
         while not ws.closed:
             raw_message = ws.receive()
             message = json.loads(raw_message)
             client.process_request(message)
+    except:
         if client.device:
-        device_id = client.device.device_id
-        devices[device_id].unregister_client(client.client_id)
+            device_id = client.device.device_id
+            devices[device_id].unregister_client(client.client_id)
+            print(f'unregistered client {client.client_id} from device {device_id}')
