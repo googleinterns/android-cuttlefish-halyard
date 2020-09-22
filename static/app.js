@@ -72,7 +72,7 @@ function ConnectToDevice(device_id) {
 
   let options = {      
     wsUrl: ((location.protocol == 'http:') ? 'ws://' : 'wss://') +
-      operator_host + '/connect_client',
+     sig_server_host + '/connect_client',
   };
 
   import('./cf_webrtc.js')
