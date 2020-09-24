@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block head %}
+  <title>Cuttlefish Interface</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+{% endblock %}
+
+{% block body %}
+<section id='device_connection'>
+  <div id='device_view'>
+    <video id="deviceScreen" autoplay ></video>
+  </div>
+  <div id='control_view'>
+    <button id="keyboardCaptureBtn">Capture Keyboard</button>
+    <button id="showLogcatBtn">Show Logcat</button>
+    <hr>
+    <div id='control_panel'>
+      <h2>Device Controls</h2>
+    </div>
+    <div id='device_details'>
+      <h2>Device Details</h2>
+      <h3>Hardware Configuration</h3>
+      <span id='device_details_hardware'>unknown</span>
+    </div>
+    <textarea id="logcat" rows="55" cols="120" readonly ></textarea>
+  </div>
+</section>
+
+<script src="static/logcat.js"></script>
+<script src="static/cf_webrtc.js" type="module"></script>
+<script type="text/javascript">
+  var device_id = '{{ data.device_id }}';
+  var sig_server_host = '{{ data.sig_server_host }}';
+</script>
+<script type="text/javascript" src="static/app.js"></script>
+{% endblock %}

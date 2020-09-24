@@ -99,6 +99,7 @@ api.add_resource(Disk, "/disk/<string:disk_name>")
 # Demo UI Endpoints
 
 BASE = "http://127.0.0.1:5000/"
+SIG_SERVER_HOST = "localhost:8443"
 
 @app.route('/')
 def index():
@@ -110,16 +111,24 @@ def index():
 def instances_page():
     instances = requests.get(BASE + "instance-list").json()['instances']
     disks = requests.get(BASE + "disk-list").json()['disks']
-    return render_template('instances.html', instances=instances, disks=disks)
+    return render_template('instances.html',
+        instances=instances, disks=disks)
 
 @app.route('/images')
 def images_page():
     images = requests.get(BASE + "image-list").json()['images']
     return render_template('images.html', images=images)
 
-@app.route('/instance/connect/<string:instance_name>')
-def enter_instance(instance_name):
-    return {'connect': instance_name}
+@app.route('/connect')
+def enter_instance():
+    args = request.args
+    if not 'device_id' in args:
+        return 'missing device_id in query params'
+    data = {}
+    data['device_id'] = args['device_id']
+    data['sig_server_host'] = SIG_SERVER_HOST
+
+    return render_template('operator.html', data=data)
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)

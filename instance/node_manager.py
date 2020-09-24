@@ -29,7 +29,7 @@ def delete_node(driver, instance_name, zone):
         driver.destroy_node(node)
         return {"stopped_instance": instance_name}
     else:
-        return {"error": "node not found"}
+        return {"error": f"instance {instance_name} not found"}
 
 
 def get_base_image_from_labels(user_disk):
@@ -63,12 +63,11 @@ def set_base_image_labels(driver, user_disk, img_name, branch, target):
 
 
 def create_or_restore_instance(driver,
-        user_id='00001', zone='us-central1-b', tags=[],
-        branch='aosp-master', target='aosp_cf_x86_phone-userdebug',
-        sig_server_addr='127.0.0.1', sig_server_port='8443'):
+        user_id, sig_server_addr, sig_server_port, zone='us-central1-b',
+        tags=[], branch='aosp-master', target='aosp_cf_x86_phone-userdebug'):
     """Restores instance with existing user disk and original base image.
        Creates a new instance with latest image if user disk doesn't exist.
-       Stores userdata.img in external GCP disk.
+       Stores runtime data in external GCP disk.
        Launches Cuttlefish if creation is successful."""
 
     # SETUP
@@ -135,40 +134,26 @@ def create_or_restore_instance(driver,
     utils.wait_for_instance(instance_name, zone)
     print('successfully created new instance', instance_name)
 
-    driver.attach_volume(
-        new_instance,
-        user_disk)
+    driver.attach_volume(new_instance, user_disk)
+    print(f'attached {disk_name} to {instance_name}')
 
     os.system(f'gcloud compute ssh --zone={zone} {instance_name} -- \
         sudo mkdir /mnt/user_data')
     os.system(f'gcloud compute ssh --zone={zone} {instance_name} -- \
         sudo mount /dev/sdb /mnt/user_data')
     os.system(f'gcloud compute ssh --zone={zone} {instance_name} -- \
-        sudo chmod 777 /mnt/user_data/userdata.img')
+        sudo chmod -R 777 /mnt/user_data')
     # FIXME : should assign specific user permissions
 
-    os.system(f'gcloud compute ssh --zone={zone} {instance_name} -- \
-        HOME=/usr/local/share/cuttlefish /usr/local/share/cuttlefish/bin/launch_cvd \
-        --start_webrtc --daemon \
-        --webrtc_sig_server_addr={sig_server_addr} \
-        --webrtc_sig_server_port={sig_server_port} \
-        --start_webrtc_sig_server=false \
-        --webrtc_device_id={instance_name} \
-        --data_image=/mnt/user_data/userdata.img \
-        --data_policy=create_if_missing --blank_data_image_mb=30000 \
-        --report_anonymous_usage_stats=y')
-
-    print('launched cuttlefish on', instance_name)
+    launch_cvd(instance_name, zone, sig_server_addr, sig_server_port)
 
     return {"name": instance_name}
 
-
 def create_instance(driver,
-        user_id='00001', zone='us-central1-b', tags=[],
-        branch='aosp-master', target='aosp_cf_x86_phone-userdebug',
-        sig_server_addr='127.0.0.1', sig_server_port='8443'):
+        user_id, sig_server_addr, sig_server_port, zone='us-central1-b',
+        tags=[], branch='aosp-master', target='aosp_cf_x86_phone-userdebug'):
     """Creates a new Cuttlefish instance and launches it.
-       Does not store userdata.img in external GCP disk."""
+       Does not store runtime data in external GCP disk."""
 
     target = target.replace('_','-')
     instance_name = f'halyard-{user_id}'
@@ -199,15 +184,34 @@ def create_instance(driver,
 
     print('successfully created new instance', instance_name)
 
-    os.system(f'gcloud compute ssh --zone={zone} {instance_name} -- \
-        HOME=/usr/local/share/cuttlefish /usr/local/share/cuttlefish/bin/launch_cvd \
+    launch_cvd(instance_name, zone, sig_server_addr, sig_server_port, False)
+
+    return {"name": instance_name}
+
+def launch_cvd(instance_name, zone, sig_server_addr, sig_server_port, use_user_disk=True):
+    """Launch cvd on given instance and connect to operator on given address.
+       If use_user_disk is True it uses existing user data disk."""
+
+    cuttlefish_dir = '/usr/local/share/cuttlefish'
+    user_data_dir = '/mnt/user_data'
+
+    launch_command = f'gcloud compute ssh --zone={zone} {instance_name} -- '
+
+    if use_user_disk:
+        launch_command += f'HOME={user_data_dir} \
+            ANDROID_HOST_OUT={cuttlefish_dir} \
+            ANDROID_PRODUCT_OUT={cuttlefish_dir} '
+    else:
+        launch_command += f'HOME={cuttlefish_dir} '
+
+    launch_command += f'{cuttlefish_dir}/bin/launch_cvd \
         --start_webrtc --daemon \
         --webrtc_sig_server_addr={sig_server_addr} \
         --webrtc_sig_server_port={sig_server_port} \
         --start_webrtc_sig_server=false \
         --webrtc_device_id={instance_name} \
-        --report_anonymous_usage_stats=y')
+        --report_anonymous_usage_stats=y'
 
-    print('launched cuttlefish on', instance_name)
+    os.system(launch_command)
 
-    return {"name": instance_name}
+    print(f'Launched cuttlefish on {instance_name} at {sig_server_addr}:{sig_server_port}')

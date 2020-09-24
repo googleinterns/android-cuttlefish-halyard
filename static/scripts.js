@@ -1,4 +1,7 @@
 
+const SIG_SERVER_ADDR = "10.128.0.45"
+const SIG_SERVER_PORT = "8443"
+
 ajaxCall = function(msg, url, type, body) {
     console.log(msg);
     return $.ajax({
@@ -19,11 +22,13 @@ ajaxCall = function(msg, url, type, body) {
 // INSTANCES
 
 createNewInstance = function() {
+    var userId = document.getElementById("userIdInput").value;
     let msg = 'New Instance AJAX call'
     let url = 'instance-list'
     let type = 'POST'
-    let body = {"tags": ["kradtke-ssh"]}
-    return ajax_call(msg, url, type, body)
+    let body = {"user_id": userId, "sig_server_addr": SIG_SERVER_ADDR,
+                "sig_server_port": SIG_SERVER_PORT, "tags": ["kradtke-ssh"]}
+    return ajaxCall(msg, url, type, body)
 }
 
 infoInstance = function(instance_name) {
@@ -31,7 +36,7 @@ infoInstance = function(instance_name) {
     let url = 'instance/' + instance_name
     let type = 'GET'
     let body = {}
-    return ajax_call(msg, url, type, body)
+    return ajaxCall(msg, url, type, body)
 }
 
 stopInstance = function(instance_name) {
@@ -39,18 +44,19 @@ stopInstance = function(instance_name) {
     let url = 'instance/' + instance_name
     let type = 'DELETE'
     let body = {}
-    return ajax_call(msg, url, type, body)
+    return ajaxCall(msg, url, type, body)
 }
 
 // DISKS
 
 restoreDisk = function(disk_name) {
-    let user_id = disk_name.replace(/^(halyard-user-)/,"");
+    let userId = disk_name.replace(/^(halyard-user-)/,"");
     let msg = 'Restore Disk AJAX call'
     let url = 'instance-list'
     let type = 'POST'
-    let body = {"user_id": user_id, "tags": ["kradtke-ssh"]}
-    return ajax_call(msg, url, type, body)
+    let body = {"user_id": userId, "sig_server_addr": SIG_SERVER_ADDR,
+                "sig_server_port": SIG_SERVER_PORT, "tags": ["kradtke-ssh"]}
+    return ajaxCall(msg, url, type, body)
 }
 
 deleteDisk = function(disk_name) {
@@ -58,7 +64,7 @@ deleteDisk = function(disk_name) {
     let url = 'disk/' + disk_name
     let type = 'DELETE'
     let body = {}
-    return ajax_call(msg, url, type, body)
+    return ajaxCall(msg, url, type, body)
 }
 
 // IMAGES
@@ -68,7 +74,7 @@ createNewImage = function() {
     let url = 'image-list'
     let type = 'POST'
     let body = {"tags": ["kradtke-ssh"]}
-    return ajax_call(msg, url, type, body)
+    return ajaxCall(msg, url, type, body)
 }
 
 infoImage = function(image_name) {
@@ -76,7 +82,7 @@ infoImage = function(image_name) {
     let url = 'image/' + image_name
     let type = 'GET'
     let body = {}
-    return ajax_call(msg, url, type, body)
+    return ajaxCall(msg, url, type, body)
 }
 
 deleteImage = function(image_name) {
@@ -84,5 +90,5 @@ deleteImage = function(image_name) {
     let url = 'image/' + image_name
     let type = 'DELETE'
     let body = {}
-    return ajax_call(msg, url, type, body)
+    return ajaxCall(msg, url, type, body)
 }
