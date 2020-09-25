@@ -87,7 +87,7 @@ def create_or_restore_instance(driver,
         base_image = get_base_image_from_labels(user_disk)
     else:
         user_disk = driver.create_volume(
-            30, disk_name, location=zone, image='halyard-blank')
+            30, disk_name, location=zone, image='blank-halyard')
         base_image = None
 
 
