@@ -128,7 +128,7 @@ def enter_instance():
     data['device_id'] = args['device_id']
     data['sig_server_host'] = SIG_SERVER_HOST
 
-    return render_template('operator.html', data=data)
+    return render_template('cvd_interface.html', data=data)
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)
