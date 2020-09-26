@@ -1,4 +1,4 @@
-from server import app
+from sig_server import app
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
